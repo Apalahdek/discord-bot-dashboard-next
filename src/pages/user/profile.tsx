@@ -14,7 +14,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { IoLogOut } from 'react-icons/io5';
-import { signInWithPopup, GoogleAuthProvider, getAuth } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { useLogoutMutation } from '@/utils/auth/hooks';
 import { useSelfUser } from '@/api/hooks';
 import { profile } from '@/config/translations/profile';
@@ -25,8 +25,7 @@ import { languages, useLang } from '@/config/translations/provider';
 import { useSettingsStore } from '@/stores';
 import AppLayout from '@/components/layout/app';
 import { NextPageWithLayout } from '@/pages/_app';
-import { auth } from '@/config/firebaseConfig';  // Firebase config
-
+import { auth } from '@/config/firebaseConfig'; // Firebase config
 
 const names = {
   en: "English",
@@ -49,14 +48,17 @@ const ProfilePage: NextPageWithLayout = () => {
   const [apiKey, setApiKey] = useState<string>('');
   const [apiStatus, setApiStatus] = useState<string | null>(null);
   const [linkedGmail, setLinkedGmail] = useState<boolean>(false);
+  const [linkedEmail, setLinkedEmail] = useState<string | null>(null);
   const toast = useToast();
 
   useEffect(() => {
     // Check if the user has linked their Gmail account
-    const checkLinkedGmail = localStorage.getItem('linked-gmail');
-    if (checkLinkedGmail === 'true') {
+    const storedEmail = localStorage.getItem('linked-gmail-email');
+    if (storedEmail) {
       setLinkedGmail(true);
+      setLinkedEmail(storedEmail);
     }
+
     const storedApiKey = localStorage.getItem('jkt48-api-key');
     if (storedApiKey) {
       setApiKey(storedApiKey);
@@ -98,11 +100,13 @@ const ProfilePage: NextPageWithLayout = () => {
 
       // Store the Gmail email in localStorage and set linked status
       localStorage.setItem('linked-gmail', 'true');
+      localStorage.setItem('linked-gmail-email', user.email || 'Unknown Email');
       setLinkedGmail(true);
+      setLinkedEmail(user.email || 'Unknown Email');
 
       toast({
         title: 'Gmail Linked',
-        description: 'Your Gmail account has been successfully linked.',
+        description: `Your Gmail account (${user.email}) has been successfully linked.`,
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -195,41 +199,27 @@ const ProfilePage: NextPageWithLayout = () => {
             />
           </FormControl>
 
-          {/* API Key Settings */}
+          {/* Gmail Settings */}
           <FormControl>
             <Box mb={2}>
               <FormLabel fontSize="md" fontWeight="medium" m={0}>
-                JKT48Connect Apikey
+                Linked Gmail Account
               </FormLabel>
-              <Text color="TextSecondary">Simpan Apikeymu disini</Text>
+              {linkedGmail && linkedEmail ? (
+                <Text color="green.500">
+                  Linked Email: {linkedEmail}
+                </Text>
+              ) : (
+                <Text color="red.500">No Gmail account linked.</Text>
+              )}
             </Box>
-            <Input
-              value={apiKey}
-              onChange={handleApiKeyChange}
-              placeholder="Masukkan API Key JKT48"
-              size="lg"
-            />
-            {apiStatus && <Text mt={2}>{apiStatus}</Text>}
-          </FormControl>
-          <Button colorScheme="teal" onClick={saveApiKey}>
-            Simpan API Key
-          </Button>
-
-          {/* Gmail Link Button */}
-          {!linkedGmail && (
             <Button
               colorScheme="blue"
-              mt={4}
               onClick={linkGmailAccount}
             >
-              Link Gmail Account
+              {linkedGmail ? 'Link Another Gmail Account' : 'Link Gmail Account'}
             </Button>
-          )}
-          {linkedGmail && (
-            <Text mt={4} color="green.500">
-              Gmail Account Linked
-            </Text>
-          )}
+          </FormControl>
 
           <Spacer />
           <Button
